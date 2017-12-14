@@ -16,9 +16,9 @@
 #include "tdc7200.h"          // TDC registers and structures
 
 void print_signed_picos_as_seconds (uint64_t x) {
-  uint64_t sec, secx, frac, frach, fracx, fracl;    
+  uint64_t sec, secx, frac, frach, fracx, fracl;
   char str[128];
-  
+
   sec = abs(x / 1000000000000);
   secx = sec * 1000000000000;
   frac = x - secx;
@@ -31,17 +31,17 @@ void print_signed_picos_as_seconds (uint64_t x) {
 
   sprintf(str,"%lu.",sec), Serial.print(str);
   sprintf(str, "%06lu", frach), Serial.print(str);
-  sprintf(str, "%06lu", fracl), Serial.print(str);  
-} 
+  sprintf(str, "%06lu", fracl), Serial.print(str);
+}
 
 void print_signed_picos_as_seconds (int64_t x) {
-  int64_t sec, secx, frac, frach, fracx, fracl;    
+  int64_t sec, secx, frac, frach, fracx, fracl;
   char str[128];
-  
+
   sec = abs(x / 1000000000000);  // hopefully avoid double negative sign.  Thanks, Curt!
   secx = sec * 1000000000000;
   frac = abs(x - secx);
-  
+
   // break fractional part of seconds into two 6 digit numbers
 
   frach = frac / 1000000;
@@ -53,5 +53,46 @@ void print_signed_picos_as_seconds (int64_t x) {
   }
   sprintf(str,"%ld.",sec), Serial.print(str);
   sprintf(str, "%06ld", frach), Serial.print(str);
-  sprintf(str, "%06ld", fracl), Serial.print(str);  
+  sprintf(str, "%06ld", fracl), Serial.print(str);
+}
+
+void print_signed_femtos_as_seconds (uint64_t x) {
+  uint64_t sec, secx, frac, frach, fracx, fracl;
+  char str[128];
+
+  sec = abs(x / 1000000000000000);
+  secx = sec * 1000000000000000;
+  frac = x - secx;
+
+  // break fractional part of seconds into two 6 digit numbers
+
+  frach = frac / 1000000000;
+  fracx = frach * 1000000000;
+  fracl = frac - fracx;
+
+  sprintf(str,"%lu.", sec), Serial.print(str);
+  sprintf(str, "%09lu", frach), Serial.print(str);
+  sprintf(str, "%09lu", fracl), Serial.print(str);
+}
+
+void print_signed_femtos_as_seconds (int64_t x) {
+  int64_t sec, secx, frac, frach, fracx, fracl;
+  char str[128];
+
+  sec = abs(x / 1000000000000000);  // hopefully avoid double negative sign.  Thanks, Curt!
+  secx = sec * 1000000000000000;
+  frac = abs(x - secx);
+
+  // break fractional part of seconds into two 6 digit numbers
+
+  frach = frac / 1000000000;
+  fracx = frach * 1000000000;
+  fracl = frac - fracx;
+
+  if (x < 0) {
+    Serial.print("-");
+  }
+  sprintf(str,"%ld.",sec), Serial.print(str);
+  sprintf(str, "%09ld", frach), Serial.print(str);
+  sprintf(str, "%09ld", fracl), Serial.print(str);
 }

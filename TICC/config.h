@@ -23,8 +23,9 @@ enum MeasureMode : unsigned char {Timestamp, Interval, Period, timeLab, Debug, N
 // default values for config struct
 #define DEFAULT_MODE              (MeasureMode) 0       // Measurement mode -- 0 is Timestamp
 #define DEFAULT_POLL_CHAR         (char)    0x00        // In poll mode, wait for this before output
-#define DEFAULT_CLOCK_HZ          (int64_t) 10000000    // 10 MHz
-#define DEFAULT_PICTICK_PS        (int64_t) 100000000   // 100us
+#define DEFAULT_CLOCK_HZ          (int64_t) 16384000    // 10 MHz
+#define DEFAULT_PICTICK_PS        (int64_t) 61035156    // 100us
+#define DEFAULT_PICTICK_FS        (int64_t) 61035156250 // 100us
 #define DEFAULT_CAL_PERIODS       (int16_t) 20          // CAL_PERIODS (2, 10, 20, 40)
 #define DEFAULT_TIMEOUT           (int16_t)  0x05       // measurement timeout
 #define DEFAULT_SYNC_MODE         (char)    'M'         // (M)aster or (S)lave
@@ -40,27 +41,28 @@ enum MeasureMode : unsigned char {Timestamp, Interval, Period, timeLab, Debug, N
 /*****************************************************************/
 // configuration structure type
 struct config_t {
-  byte       VERSION = EEPROM_VERSION;  // one byte   
+  byte       VERSION = EEPROM_VERSION;  // one byte
   char       SW_VERSION[17];            // up to 16 bytes plus term
-  char       BOARD_REV;                 // one byte   
+  char       BOARD_REV;                 // one byte
   char       SER_NUM[17];              // up to 16 bytes plus term
-  
+
   // global settings:
   MeasureMode MODE;                     // (T)imestamp, time (I)nterval
                                         // Time(L)ab, (P)eriod, (D)ebug (default 'T')
   char       POLL_CHAR;                 // In poll mode, wiat for this before output
   int64_t    CLOCK_HZ;                  // clock in Hz (default 10 000 000)
   int64_t    PICTICK_PS;                // coarse tick (default 100 000 000)
+  int64_t    PICTICK_FS;                // coarse tick (default 100 000 000 000)
   int16_t    CAL_PERIODS;               // cal periods 2, 10, 20, 40 (default 20)
   int16_t    TIMEOUT;                   // timeout for measurement in hex (default 0x05)
   char       SYNC_MODE;                 // one byte:  'M' for master,  'S' for slave
-  
+
   // per-channel settings, arrays of 2 for channels A and B:
-  char       START_EDGE[2];            // (R)ising (default) or (F)alling edge 
+  char       START_EDGE[2];            // (R)ising (default) or (F)alling edge
   int64_t    TIME_DILATION[2];         // time dilation factor (default 2500)
   int64_t    FIXED_TIME2[2];           // if >0 use to replace time2 (default 0)
   int64_t    FUDGE0[2];                // fudge factor (ps) (default 0)
-  
+
 };
 
 /*****************************************************************/
@@ -68,6 +70,7 @@ struct config_t {
 void UserConfig(struct config_t *config);
 void print_MeasureMode(MeasureMode x);
 void printHzAsMHz(int64_t x);
+void printHzAsGHz(int64_t x);
 void get_serial_number();
 void eeprom_clear();
 

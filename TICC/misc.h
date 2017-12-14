@@ -9,4 +9,8 @@
 
 void print_unsigned_picos_as_seconds (uint64_t x);
 
-void print_signed_picos_as_seconds (int64_t x); 
+void print_signed_picos_as_seconds (int64_t x);
+
+void print_unsigned_femtos_as_seconds (uint64_t x);
+
+void print_signed_femtos_as_seconds (int64_t x);

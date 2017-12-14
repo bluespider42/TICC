@@ -55,9 +55,9 @@ char getChar(int charSourceIsLine)
 
 // Get a string of characters from Serial input.  Return when buffer inputLine is full or when a newline character is received.
 // The newline is  put into inputLine. In addition, inputLine is always none-terminated.
-// ToDo:  
+// ToDo:
 // (1) allow use of Backspace  DONE
-// (2) allow use of Home, End, Delete;  
+// (2) allow use of Home, End, Delete;
 // (3) allow insertion of characters
 void getLine()
 {
@@ -100,7 +100,7 @@ void getLine()
 // if 'source' is 0, characters are obtained from the Serial port;
 // if source is 1, characters come from inputLine, using inputLineIndex
 // parse Serial input and return value in result.  Result is unchanged if only a newline is received.  In this case getInt64new remains 0.
-void getInt64(int64_t *result, int source)   
+void getInt64(int64_t *result, int source)
 {
   int negative = 0;
   int exponentNegative = 0;
@@ -114,7 +114,7 @@ void getInt64(int64_t *result, int source)
   char newChar;
 
   while ( isspace(newChar = getChar(source) )  ) /* ignore leading whitespace */ ;
-  
+
   if (newChar == '+') newChar = getChar(source);    // allow leading plus
   else if (newChar == '-')                                      // handle leading minus
   {
@@ -122,10 +122,10 @@ void getInt64(int64_t *result, int source)
     newChar = getChar(source);
   }
     while (newChar == '0')
-    { newChar = getChar(source);   // ignore mantissa leading zeros     
+    { newChar = getChar(source);   // ignore mantissa leading zeros
       getInt64new = 1;                  // but note any zero entered
     }
-    
+
   if (isdigit(newChar))    // get mantissa integer part
   {
     while (isdigit(newChar))
@@ -144,7 +144,7 @@ void getInt64(int64_t *result, int source)
       newChar = getChar(source);
     }
   }
-  
+
     // newChar should be '.' or digit
     if (newChar == '.') newChar = getChar(source);
     while (isdigit(newChar))      // fractional part of mantissa
@@ -160,7 +160,7 @@ void getInt64(int64_t *result, int source)
     {
       newChar = getChar(source);
       if (newChar == '+') newChar = getChar(source);
-     else if (newChar == '-') 
+     else if (newChar == '-')
       {
         exponentNegative = 1;
         newChar = getChar(source);
@@ -179,16 +179,16 @@ void getInt64(int64_t *result, int source)
     if (getInt64new == 0) return;   // no mantissa found
 
     // scale the mantissa according to the exponent, and separate into integer and fractional parts
-    
+
     mantissaIntegerPart = mantissa;
-    if (exponent < 0)  
-    { 
+    if (exponent < 0)
+    {
       for (int i = exponent; i < 0; ++i)  mantissaFractionPartPower *= 10;
       mantissaFractionPart = mantissaIntegerPart % mantissaFractionPartPower;
       mantissaIntegerPart /= mantissaFractionPartPower;
     }
     if (exponent > 0)  for (int i = 0; i < exponent; ++i)   mantissaIntegerPart *= 10;
-    if (negative) 
+    if (negative)
     { mantissaIntegerPart = -mantissaIntegerPart;
       mantissaFractionPart = -mantissaFractionPart;
     }
@@ -203,6 +203,16 @@ void printHzAsMHz(int64_t x)
   int64_t fract = x - Hz;
   sprintf(str, "%ld.", (int32_t)MHz), Serial.print(str);
   sprintf(str,"%06ld", (int32_t)fract), Serial.print(str);
+}
+
+void printHzAsGHz(int64_t x)
+{
+  char str[128];
+  int64_t GHz = x / 1000000000;
+  int64_t Hz = GHz * 1000000000;
+  int64_t fract = x - Hz;
+  sprintf(str, "%ld.", (int32_t)GHz), Serial.print(str);
+  sprintf(str,"%09ld", (int32_t)fract), Serial.print(str);
 }
 
 void measurementMode(struct config_t *pConfigInfo)
@@ -246,7 +256,7 @@ void pollChar(struct config_t *pConfigInfo)
  Serial.println("   Enter one character to set; enter space to unset");
   char c = toupper(getChar());
   if (c == ' ') { c = 0x00; }; // so don't use space as the poll character!
-  pConfigInfo->POLL_CHAR = c; 
+  pConfigInfo->POLL_CHAR = c;
 }
 
 void clockSpeed(struct config_t *pConfigInfo)
@@ -256,7 +266,7 @@ void clockSpeed(struct config_t *pConfigInfo)
   getLine();
   inputLineReadIndex = 0;
   getInt64(&clock, 1);
-  if (( clock >= 1) && (clock <= 16) ) pConfigInfo->CLOCK_HZ = clock * 1000000 + mantissaFractionPart * 1000000 / mantissaFractionPartPower;    
+  if (( clock >= 1) && (clock <= 16) ) pConfigInfo->CLOCK_HZ = clock * 1000000 + mantissaFractionPart * 1000000 / mantissaFractionPartPower;
 }
 
 void coarseClockRate(struct config_t *pConfigInfo)
@@ -267,7 +277,10 @@ void coarseClockRate(struct config_t *pConfigInfo)
   getLine();
   inputLineReadIndex = 0;
   getInt64(&clock, 1);
-  if (clock > 0) pConfigInfo->PICTICK_PS = clock * 1000000 + mantissaFractionPart * 1000000 / mantissaFractionPartPower;  // value entered in us, but stored in ps
+  if (clock > 0) {
+      pConfigInfo->PICTICK_PS = clock * 1000000 + mantissaFractionPart * 1000000 / mantissaFractionPartPower;  // value entered in us, but stored in ps
+      pConfigInfo->PICTICK_FS = (clock * 1000000 + mantissaFractionPart * 1000000 / mantissaFractionPartPower)*1000;  // value entered in us, but stored in fs
+  }
 }
 
 void calibrationPeriods(struct config_t *pConfigInfo)
@@ -287,13 +300,13 @@ void timeout(struct config_t *pConfigInfo)
   int64_t timeout;
   char str[8];
   sprintf(str, "0x%02X", (int32_t)pConfigInfo->TIMEOUT);
-  
+
   Serial.print("Timeout "), Serial.print(str), Serial.println(" Choose a value in the range 0 to 255.  Default 5");  // casting to int32_t discards upper 32 bits
   Serial.println("Enter new value and press Enter (or just Enter for no change)");
   getLine();
   inputLineReadIndex = 0;
   getInt64(&timeout, 1);
-  if ( (getInt64new) && (timeout >= 0) && (timeout <= 255) ) pConfigInfo->TIMEOUT = timeout;   
+  if ( (getInt64new) && (timeout >= 0) && (timeout <= 255) ) pConfigInfo->TIMEOUT = timeout;
 }
 
 void masterSlave(struct config_t *pConfigInfo)
@@ -310,7 +323,7 @@ void triggerEdge(struct config_t *pConfigInfo)
   Serial.print   ("   B             "); Serial.println(pConfigInfo->START_EDGE[1]);
   Serial.println(" Enter channel {space} edge: R (rising) or F (falling).  Default is R");
   getLine();
-  
+
   int i = 0;
   int index = -1;
   while (inputLine[i] == ' ') ++i;    // bypass leading spaces
@@ -326,7 +339,7 @@ void triggerEdge(struct config_t *pConfigInfo)
 
 void timeDilation(struct config_t *pConfigInfo)
 {
-  int index = -1; 
+  int index = -1;
   int64_t dilation;
   Serial.println("Channel       Time Dilation Factor");
   Serial.print  ("   A              "), Serial.println((int32_t)pConfigInfo->TIME_DILATION[0]);
@@ -377,7 +390,7 @@ void fudge0(struct config_t *pConfigInfo)
   Serial.println("Channel       Fudge0");
   Serial.print   ("    A           "), Serial.println((int32_t)pConfigInfo->FUDGE0[0]);
   Serial.print   ("    B           "), Serial.println((int32_t)pConfigInfo->FUDGE0[1]);
- 
+
   for ( ; ; )
   {Serial.println("Enter channel  (A or B)");
   char c = toupper(getChar());
@@ -415,6 +428,7 @@ struct config_t defaultConfig() {
   x.POLL_CHAR = DEFAULT_POLL_CHAR;
   x.CLOCK_HZ = DEFAULT_CLOCK_HZ;
   x.PICTICK_PS = DEFAULT_PICTICK_PS;
+  x.PICTICK_FS = DEFAULT_PICTICK_FS;
   x.CAL_PERIODS = DEFAULT_CAL_PERIODS;
   x.TIMEOUT = DEFAULT_TIMEOUT;
   x.SYNC_MODE = DEFAULT_SYNC_MODE;
@@ -441,56 +455,56 @@ void doSetupMenu(struct config_t *pConfigInfo)      // also display the default 
   {
   Serial.println(), Serial.println();
   Serial.print("M   Measurement Mode        "); Serial.print( modeToChar(pConfigInfo->MODE)); Serial.println("               default T");   // enum MeasureMode, default Timestamp
-  Serial.print("H   poll cHaracter          "); 
+  Serial.print("H   poll cHaracter          ");
           if (pConfigInfo->POLL_CHAR) {
             Serial.print(pConfigInfo->POLL_CHAR);Serial.println("               default unset"); // normally unset
           } else {
             Serial.print("unset");Serial.println("           default unset");
           }
   Serial.print("S   clock Speed  (MHz)      "); printHzAsMHz(pConfigInfo->CLOCK_HZ), Serial.println("       default 10");           // int_64, default 1e7
-  Serial.print("C   Coarse Clock Rate (us)  "); printHzAsMHz(pConfigInfo->PICTICK_PS), Serial.println("      default 100");         // int_64, default 1e8
+  Serial.print("C   Coarse Clock Rate (us)  "); printHzAsGHz(pConfigInfo->PICTICK_FS), Serial.println("    default 100");         // int_64, default 1e8
   Serial.print("P   calibration Periods     "); Serial.print((int32_t)pConfigInfo->CAL_PERIODS); Serial.println("              default 20");// int_16, choices are 2, 10, 20, 40; default 20
-  Serial.print("T   Timeout                 "); 
+  Serial.print("T   Timeout                 ");
           char str[8];
           sprintf(str, "0x%02X", (int32_t)pConfigInfo->TIMEOUT);
-          Serial.print(str); 
+          Serial.print(str);
           Serial.println("            default 0x05");          // int_16, default 5
   Serial.print("Y   sync:  master / slave   "); Serial.print(pConfigInfo->SYNC_MODE); Serial.println("               default M");                // M (default) or S
-    
+
   Serial.print("E   trigger Edge            ");     // R(ising) or F(alling)
     	    Serial.print(pConfigInfo->START_EDGE[0]);
     	    Serial.print(' ');
     	    Serial.print(pConfigInfo->START_EDGE[1]);
     	    Serial.println("             default R");
-          
+
   Serial.print("D   time Dilation           ");       // int_64, default 2500
     	    Serial.print((int32_t)pConfigInfo->TIME_DILATION[0]);
     	    Serial.print(' ');
           Serial.print((int32_t)pConfigInfo->TIME_DILATION[1]);
           Serial.println("       default 2500");
-    	
+
   Serial.print("F   Fixed Time2             ");   // int_64, default 0
         Serial.print((int32_t)pConfigInfo->FIXED_TIME2[0]);
         Serial.print(' ');
         Serial.print((int32_t)pConfigInfo->FIXED_TIME2[1]);
         Serial.println("             default 0");
-     
+
   Serial.print("G   fudge0                  ");   // int_64, default 0
         Serial.print((int32_t)pConfigInfo->FUDGE0[0]);
     	  Serial.print(' ');
         Serial.print((int32_t)pConfigInfo->FUDGE0[1]);
         Serial.println("             default 0");
-    	
+
   Serial.println();
   Serial.println("R   Reset all to default values");
   Serial.println("W   Write changes and restart");
   Serial.println("Z   Discard changes and exit setup");
   Serial.println("choose one: ");
-    
+
   response = toupper(getChar());    // wait for a character
   Serial.println();
-  
-    switch(response)   
+
+    switch(response)
     {
       case 'M':  measurementMode(pConfigInfo);
     		break;
@@ -521,11 +535,11 @@ void doSetupMenu(struct config_t *pConfigInfo)      // also display the default 
                       EEPROM_writeAnything(CONFIG_START, *pConfigInfo); // save change to config
                       Serial.println("Finished.");
                       return;
-    	  break; 
+    	  break;
       	case 'Z':	// discard changes and exit
                       return;
     	  break;
-      
+
       // this doesn't show up in the menu -- reset entire eeprom to 0xFF (factory
       // default).  Restart the board to write new serial number and defaults.
       case 'X':
@@ -534,15 +548,15 @@ void doSetupMenu(struct config_t *pConfigInfo)      // also display the default 
         eeprom_clear();
         Serial.println("Finished.");
         return;
-        break;      
+        break;
       default:  Serial.println("???");  // 'bad selection'
     		break;
     }   // switch
-  }   // for 
+  }   // for
 }
 
 
-void UserConfig(struct config_t *pConfigInfo) 
+void UserConfig(struct config_t *pConfigInfo)
 {
     char c;
     while ( ! Serial )   /* wait until Serial port is open */ ;
@@ -551,14 +565,14 @@ void UserConfig(struct config_t *pConfigInfo)
     Serial.print("# ");
     bool configRequested = 0;
     for (int i = 6; i >= 0; --i)  // wait ~6 sec so user can type something
-    { 
+    {
       delay(250);   Serial.print('.');      if (Serial.available())       { configRequested = 1;        break;      }
       delay(250);   Serial.print('.');      if (Serial.available())       { configRequested = 1;        break;      }
       delay(250);   Serial.print('.');      if (Serial.available())       { configRequested = 1;        break;      }
       delay(250);   Serial.print('.');      if (Serial.available())       { configRequested = 1;        break;      }
     }
     while (Serial.available()) c = Serial.read();   // eat any characters entered before we start  doSetupMenu()
-    if (configRequested) doSetupMenu(pConfigInfo); 
+    if (configRequested) doSetupMenu(pConfigInfo);
 }
 
 // Pretty-print mode
@@ -574,10 +588,10 @@ void print_MeasureMode(MeasureMode x) {
       Serial.println("Time Interval A->B");
       break;
     case timeLab:
-      Serial.println("TimeLab 3-channel");     
+      Serial.println("TimeLab 3-channel");
     case Debug:
       Serial.println("Debug");
-  }  
+  }
 }
 
 void eeprom_write_config_default (uint16_t offset) {
@@ -594,11 +608,11 @@ void print_config (config_t x) {
           } else {
             Serial.println("none");
           }
-  Serial.print("# EEPROM Version: ");Serial.print(EEPROM.read(CONFIG_START)); 
+  Serial.print("# EEPROM Version: ");Serial.print(EEPROM.read(CONFIG_START));
   Serial.print(", Board Version: ");Serial.println(x.BOARD_REV);
   // Print SW version from const, not from eeprom (which won't update until next "W" command)
   Serial.print("# Software Version: ");Serial.println(SW_VERSION);
-  Serial.print("# Board Serial Number: ");Serial.println(x.SER_NUM); 
+  Serial.print("# Board Serial Number: ");Serial.println(x.SER_NUM);
   Serial.print("# Clock Speed: ");printHzAsMHz(x.CLOCK_HZ);Serial.println(" MHz");
   Serial.print("# Coarse tick: ");printHzAsMHz(x.PICTICK_PS);Serial.println(" usec");
   Serial.print("# Cal Periods: ");Serial.println(x.CAL_PERIODS);
@@ -615,15 +629,15 @@ void print_config (config_t x) {
   Serial.print(" (chA), ");Serial.print((int32_t)x.FUDGE0[1]);Serial.println(" (chB)");
 }
 
-void get_serial_number() { 
+void get_serial_number() {
 
   // Serial number is 8 bytes.  On first run,
   // check location and if not found, use random()
   // to generate.  If found, just read, format as string,
   // and set config.SER_NUM
-  
+
   int32_t x,y;  // 2 longs because sprintf can't handle uint64
-  
+
   EEPROM_readAnything(SER_NUM_START,x);
   EEPROM_readAnything(SER_NUM_START+4,y);
 
@@ -639,7 +653,7 @@ void get_serial_number() {
     y = random(0xFFFF);
     EEPROM_writeAnything(SER_NUM_START,x);
     EEPROM_writeAnything(SER_NUM_START+4,y);
-    sprintf(SER_NUM, "%04lX%04lX", x,y); 
+    sprintf(SER_NUM, "%04lX%04lX", x,y);
     Serial.print("Serial Number: ");
     Serial.println(SER_NUM);
     delay(7500);
@@ -651,5 +665,5 @@ void eeprom_clear() {
   // write 0xFF (factory default) to entire eeprom area
   for (int i = 0 ; i < EEPROM.length() ; i++) {
   EEPROM.write(i, 0xFF);
-  } 
+  }
 }

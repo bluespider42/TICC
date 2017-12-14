@@ -257,10 +257,11 @@ void loop() {
            break;
        
            case Interval:
-             if ( (channels[0].ts > 1) && (channels[1].ts > 1) ) { // need both channels to be sane
+             // if ( (channels[0].ts > 1) && (channels[1].ts > 1) ) { // need both channels to be sane
+             if ( channels[1].ts > 1 ) { // need second channel to be sane
                print_signed_picos_as_seconds(channels[1].ts - channels[0].ts);
                Serial.println(" TI(A->B)");
-               channels[0].ts = 0; // set to zero for test next time
+               // channels[0].ts = 0; // set to zero for test next time
                channels[1].ts = 0; // set to zero for test next time
              }
            break;
